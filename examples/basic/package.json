@@ -1,0 +1,17 @@
+{
+	"name": "@railform/example-basic",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"railform": "bun ../../packages/cli/src/index.ts",
+		"railform:config": "bun ../../packages/cli/src/index.ts ./railform.config.ts",
+		"railform:dist": "railform",
+		"railform:dist:config": "railform ./railform.config.ts",
+		"railform:dev": "bun ../../packages/cli/src/index.ts",
+		"railform:dev:config": "bun ../../packages/cli/src/index.ts ./railform.config.ts"
+	},
+	"dependencies": {
+		"@railform/core": "workspace:*",
+		"railform": "workspace:*"
+	}
+}
