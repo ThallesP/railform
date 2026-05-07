@@ -5,6 +5,11 @@ import { defineCommand } from "@bunli/core";
 import { getRailwayAuthHelp, RailwayAuthError } from "../railway/auth";
 import { resolveWorkspaceId } from "../railway/project";
 import { getCurrentUser } from "../railway/queries/current-user";
+import {
+	getSavedWorkspaceId,
+	readRailformState,
+	saveWorkspaceId,
+} from "../state";
 
 const configFile = "railform.config.ts";
 const agentsFile = "AGENTS.md";
@@ -16,21 +21,20 @@ export default defineCommand({
 	description: "Create a basic Railform project",
 	handler: async ({ cwd }) => {
 		const user = await assertRailwayLogin();
+		const state = await readRailformState(cwd);
 		const workspaceId = await resolveWorkspaceId({
+			savedWorkspaceId: getSavedWorkspaceId(state),
 			context: "new Railform projects",
 		});
 		const created: string[] = [];
 		const skipped: string[] = [];
 
-		await writeIfMissing(
-			join(cwd, configFile),
-			getConfigTemplate(workspaceId),
-			{
-				created,
-				skipped,
-				label: configFile,
-			},
-		);
+		await saveWorkspaceId(cwd, workspaceId);
+		await writeIfMissing(join(cwd, configFile), getConfigTemplate(), {
+			created,
+			skipped,
+			label: configFile,
+		});
 		await writeIfMissing(join(cwd, agentsFile), getAgentsTemplate(), {
 			created,
 			skipped,
@@ -47,6 +51,7 @@ export default defineCommand({
 
 		console.log("");
 		console.log(`Railway login: ${formatUser(user.me)}`);
+		console.log("Railway workspace saved to .railform/state.json.");
 		console.log("No Railway resources were created or changed.");
 		console.log("");
 		console.log("Next steps:");
@@ -115,7 +120,7 @@ async function writeIfMissing(
 	options.created.push(options.label);
 }
 
-function getConfigTemplate(workspaceId: string): string {
+function getConfigTemplate(): string {
 	return `// Agents: start at ${bundledSkillPath}.
 import {
 	Postgres,
@@ -128,7 +133,6 @@ import {
 
 export default new Project({
 	name: "My Railway Project",
-	workspaceId: "${workspaceId}",
 	environment: "production",
 	sharedVariables: {
 		NODE_ENV: "production",

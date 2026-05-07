@@ -657,11 +657,11 @@ function isNotAuthorizedError(error: unknown): boolean {
 }
 
 export async function resolveWorkspaceId(options: {
-	workspaceId?: string;
+	savedWorkspaceId?: string;
 	context: string;
 }): Promise<string> {
-	if (options.workspaceId) {
-		return options.workspaceId;
+	if (options.savedWorkspaceId) {
+		return options.savedWorkspaceId;
 	}
 
 	const environmentWorkspaceId = process.env.RAILWAY_WORKSPACE_ID?.trim();
@@ -689,8 +689,8 @@ export async function resolveWorkspaceId(options: {
 	if (!process.stdout.isTTY) {
 		throw new Error(
 			[
-				`Railform needs a Railway workspaceId for ${options.context}.`,
-				"Add `workspaceId` to railform.config.ts or set RAILWAY_WORKSPACE_ID.",
+				`Railform needs a Railway workspace for ${options.context}.`,
+				"Run `railform init` interactively to choose a workspace, or set RAILWAY_WORKSPACE_ID for this command.",
 				"Available workspaces:",
 				...workspaces.map(
 					(workspace) => `  - ${workspace.name}: ${workspace.id}`,

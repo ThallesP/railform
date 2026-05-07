@@ -12,7 +12,6 @@ import { formatVariables, isPromptVariable } from "./types";
 
 export type ProjectProps = {
 	name: string;
-	workspaceId?: string;
 	environment?: string;
 	services?: Service[];
 	databases?: Database[];
@@ -28,10 +27,6 @@ export class Project {
 
 	public get environment(): string {
 		return this.props.environment ?? "production";
-	}
-
-	public get workspaceId(): string | undefined {
-		return this.props.workspaceId;
 	}
 
 	public get services(): Service[] {

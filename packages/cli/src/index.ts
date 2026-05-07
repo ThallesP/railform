@@ -11,7 +11,7 @@ import reviewCommand from "./commands/review.command";
 
 const cli = await createCLI({
 	name: "railform",
-	version: "0.0.1",
+	version: "0.1.1",
 });
 
 cli.command(applyCommand);

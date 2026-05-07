@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 
 export type RailformState = {
 	version: 1;
+	workspaceId?: string;
 	projectId?: string;
 	serviceIds?: Record<string, string>;
 	projects?: Record<string, RailformProjectState>;
@@ -63,6 +64,15 @@ export async function saveProjectId(
 	state.serviceIds = {
 		...getServiceIds(state, projectName),
 	};
+	await writeRailformState(cwd, state);
+}
+
+export async function saveWorkspaceId(
+	cwd: string,
+	workspaceId: string,
+): Promise<void> {
+	const state = await readRailformState(cwd);
+	state.workspaceId = workspaceId;
 	await writeRailformState(cwd, state);
 }
 
@@ -176,6 +186,10 @@ export function getSavedProjectId(
 	return state.projectId ?? state.projects?.[projectName]?.id;
 }
 
+export function getSavedWorkspaceId(state: RailformState): string | undefined {
+	return state.workspaceId;
+}
+
 export function getSavedServiceId(
 	state: RailformState,
 	projectName: string,
@@ -200,6 +214,7 @@ function getServiceIds(
 function getWritableState(state: RailformState): RailformState {
 	return {
 		version: 1,
+		workspaceId: state.workspaceId,
 		projectId: state.projectId,
 		serviceIds: state.serviceIds,
 		approvals: state.approvals,

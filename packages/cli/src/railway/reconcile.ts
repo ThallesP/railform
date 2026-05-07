@@ -6,10 +6,12 @@ import type {
 import {
 	getSavedProjectId,
 	getSavedServiceId,
+	getSavedWorkspaceId,
 	readRailformState,
 	removeServiceId,
 	saveProjectId,
 	saveServiceId,
+	saveWorkspaceId,
 } from "../state";
 import {
 	connectService,
@@ -144,12 +146,15 @@ async function reconcileProject(
 		name: config.name,
 		environmentName: config.environment,
 		workspaceId: await resolveWorkspaceId({
-			workspaceId: config.workspaceId,
+			savedWorkspaceId: getSavedWorkspaceId(state),
 			context: `project "${config.name}"`,
 		}),
 	});
 
 	if (options.persistState !== false) {
+		if (project.workspaceId) {
+			await saveWorkspaceId(cwd, project.workspaceId);
+		}
 		await saveProjectId(cwd, project.name, project.id);
 	}
 

@@ -13,11 +13,23 @@ railway login
 
 ## Quickstart
 
+Create a project and install the config helpers:
+
+```bash
+mkdir my-app
+cd my-app
+npm init -y
+npm install -D @railform/core
+```
+
 Create a config:
 
 ```bash
 railform init
 ```
+
+If your Railway account has multiple workspaces, `init` asks which one to use
+and saves it in `.railform/state.json`.
 
 Preview changes:
 
@@ -38,7 +50,6 @@ import { Postgres, Project, Redis, Service, randomSecret } from "@railform/core"
 
 export default new Project({
 	name: "my-app",
-	workspaceId: "your-railway-workspace-id",
 	environment: "production",
 	databases: [new Postgres({ name: "postgres" }), new Redis({ name: "redis" })],
 	services: [
