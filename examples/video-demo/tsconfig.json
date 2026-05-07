@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"lib": ["ESNext"],
+		"module": "Preserve",
+		"moduleDetection": "force",
+		"moduleResolution": "Bundler",
+		"noEmit": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ESNext",
+		"types": ["bun-types"]
+	},
+	"include": ["src/**/*.ts", "railform.config.ts"]
+}
