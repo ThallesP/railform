@@ -1,8 +1,8 @@
 # railform
 
 Railform is a TypeScript config layer for Railway. It previews, stages, and
-applies Railway projects, services, databases, variables, domains, and deploy
-settings from `railform.config.ts`.
+applies Railway projects, services, databases, variables, domain references, and
+deploy settings from `railform.config.ts`.
 
 ## Install
 
@@ -13,16 +13,16 @@ railway login
 
 ## Quickstart
 
-Create a project and install the config helpers:
+Create a project:
 
 ```bash
 mkdir my-app
 cd my-app
 npm init -y
-npm install -D @railform/core
 ```
 
-Create a config:
+Create a config. `railform init` installs `@railform/core` in the project if it
+is not already present:
 
 ```bash
 railform init
