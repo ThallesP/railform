@@ -1,11 +1,20 @@
 {
 	"name": "@railform/core",
+	"version": "0.1.0",
 	"module": "index.ts",
 	"type": "module",
-	"private": true,
+	"publishConfig": {
+		"access": "public"
+	},
 	"exports": {
 		".": "./index.ts"
 	},
+	"files": [
+		"agent-skills/",
+		"index.ts",
+		"README.md",
+		"src/"
+	],
 	"scripts": {
 		"check-types": "tsc --noEmit"
 	},

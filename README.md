@@ -1,159 +1,197 @@
-# Turborepo starter
+# railform
 
-This Turborepo starter is maintained by the Turborepo core team.
+Railform stages Railway environment changes from a TypeScript config, then
+commits those staged changes when you are ready.
 
-## Using this example
+`preview` prints Railform's plan without writing to Railway. `apply` creates any
+missing Railway resources, stages the environment config patch, and commits it.
 
-Run the following command:
+Projects, services, and databases are Railway resources, so they are created
+before staging environment config. `.railform/state.json` stores only the
+project ID and a small service ID map so a local config keeps pointing at the
+same Railway resources.
+Railform does not adopt existing projects by name; without a saved project ID,
+the configured project is treated as missing.
 
-```sh
-npx create-turbo@latest
+## Config
+
+Create `railform.config.ts` in your project:
+
+```bash
+railform init
 ```
 
-## What's inside?
+`init` verifies your Railway authentication and writes a starter config. It does not
+create or change any Railway resources.
 
-This Turborepo includes the following packages/apps:
+```ts
+import { Postgres, Project, Service, promptVariable } from "@railform/core";
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+export default new Project({
+	name: "Notus API",
+	workspaceId: "your-railway-workspace-id",
+	environment: "production",
+	sharedVariables: {
+		API_URL: "https://api.example.com",
+	},
+	databases: [
+		new Postgres({
+			name: "postgres",
+		}),
+	],
+	services: [
+		new Service({
+			name: "api",
+			source: {
+				repo: "acme/notus-api",
+				branch: "main",
+			},
+			databases: ["postgres"],
+			variables: {
+				NODE_ENV: "production",
+				API_TOKEN: promptVariable("Enter Notus API token"),
+			},
+			deploy: {
+				startCommand: "bun run start",
+			},
+		}),
+	],
+});
 ```
 
-Without global `turbo`, use your package manager:
+Database resources are declared with engine-specific classes: `Postgres`,
+`MySQL`, `MongoDB`, and `Redis`. Linking a service to a database adds Railway
+reference variables for that database's standard connection variables, such as
+`DATABASE_URL=${{postgres.DATABASE_URL}}` for PostgreSQL or
+`REDIS_URL=${{redis.REDIS_URL}}` for Redis. Service and environment names are
+resolved to Railway IDs before staging, because Railway staged patches are keyed
+by IDs.
 
-```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
+Use a custom mapping when an app expects different variable names:
+
+```ts
+new Service({
+	name: "worker",
+	databases: [
+		{
+			name: "postgres",
+			variables: {
+				PG_URL: "DATABASE_URL",
+			},
+		},
+	],
+});
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Use a Docker image source instead of GitHub when the service should deploy a
+prebuilt image:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
+```ts
+new Service({
+	name: "worker",
+	source: {
+		image: "ghcr.io/acme/worker:latest",
+	},
+});
 ```
 
-Without global `turbo`:
+Services can also model Railway deploy settings such as health checks,
+replicas, cron schedules, pre-deploy commands, draining windows, restart policy,
+sleep behavior, Dockerfile paths, and watch patterns.
 
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
+Use `railwayRef`, `railwayPublicUrl`, and `railwayPrivateUrl` for service
+references instead of hand-writing Railway expression strings. Use
+`randomSecret(length)` for Railway-generated secret expressions such as
+`${{secret(48)}}`.
+
+Use `promptVariable` for values that should not live in source control.
+`preview` shows a redacted placeholder, and `apply` asks for the real value
+before writing to Railway.
+
+## Commands
+
+Preview the config without writing to Railway:
+
+```bash
+railform preview
 ```
 
-### Develop
+The plan output is grouped by human-readable additions, updates, and removals:
 
-To develop all apps and packages, run the following command:
+```text
+Project: Notus API
+Environment: production
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Plan:
+[+] create Railway service api
+[+] create Railway database postgres
 
-```sh
-cd my-turborepo
-turbo dev
+Staged changes:
+[+] add source for api
+[+] add branch for api
+[+] add env variable DATABASE_URL to api = "${{postgres.DATABASE_URL}}"
+[+] add env variable PGHOST to api = "${{postgres.PGHOST}}"
+[+] add env variable NODE_ENV to api = a redacted value
+[~] update start command for api = "bun run start"
+[-] remove shared env variable LEGACY_API_URL
 ```
 
-Without global `turbo`, use your package manager:
+`plan` is kept as a read-only alias for `preview`.
 
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
+Open the Railway project page after previewing:
+
+```bash
+railform preview --web
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+If Railform cannot open a browser, it prints the Railway link instead.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+Apply the config:
 
-```sh
-turbo dev --filter=web
+```bash
+railform apply
 ```
 
-Without global `turbo`:
+`apply` fails if the target environment already has different staged config keys,
+so Railform does not overwrite dashboard-created or unrelated pending changes.
 
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
+For an agent-safe human review loop, request approval instead of waiting on an
+interactive prompt:
+
+```bash
+railform apply --request-approval --format json
 ```
 
-### Remote Caching
+Railform stages the patch, stores a local approval record, and exits. The agent
+should show the human the returned review and approve commands:
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
+```bash
+railform review rf_abc123
+railform approve rf_abc123
 ```
 
-Without global `turbo`, use your package manager:
+After approval, the agent can continue without prompts:
 
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
+```bash
+railform apply --approval rf_abc123 --wait --format json
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+`apply --approval` re-reads Railway staged changes and refuses to continue if
+the fingerprint no longer matches what the human approved.
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+Prompt variables can be supplied non-interactively:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
+```bash
+railform apply --request-approval --var api.API_TOKEN=secret --format json
 ```
 
-Without global `turbo`:
+Use `SERVICE.KEY=value` for service variables and `KEY=value` for shared
+variables.
 
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
+To deliberately bypass the human approval request in automation, set:
+
+```bash
+RAILFORM_DANGEROUSLY_SKIP_PERMISSIONS=1 railform apply --request-approval
 ```
 
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+This is intentionally noisy and applies immediately.

@@ -5,20 +5,75 @@ import type { Command, CLI, GeneratedOptionMeta, RegisteredCommands, CommandOpti
 import { createGeneratedHelpers, registerGeneratedStore } from '@bunli/core'
 
 import Apply from '../src/commands/apply.command.js'
+import Approve from '../src/commands/approve.command.js'
+import Init from '../src/commands/init.command.js'
+import Plan from '../src/commands/plan.command.js'
+import Preview from '../src/commands/preview.command.js'
+import Reject from '../src/commands/reject.command.js'
+import Review from '../src/commands/review.command.js'
 
 // Narrow list of command names to avoid typeof-cycles in types
-const names = ['apply'] as const
+const names = ['apply', 'approve', 'init', 'plan', 'preview', 'reject', 'review'] as const
 type GeneratedNames = typeof names[number]
 
 const modules: Record<GeneratedNames, Command<any>> = {
-  'apply': Apply
+  'apply': Apply,
+  'approve': Approve,
+  'init': Init,
+  'plan': Plan,
+  'preview': Preview,
+  'reject': Reject,
+  'review': Review
 } as const
 
 const metadata: Record<GeneratedNames, GeneratedCommandMeta> = {
   'apply': {
       name: 'apply',
       description: 'Apply the current configuration to Railway',
+      options: {
+        'request-approval': { type: 'booleanFlagSchema', required: true, hasDefault: false, description: 'Stage changes and create a human approval request', schema: {"type":"zod","name":"booleanFlagSchema"}, validator: '(val) => true' },
+        'approval': { type: 'optionalStringSchema', required: true, hasDefault: false, description: 'Continue an apply after a human approved this approval ID', schema: {"type":"zod","name":"optionalStringSchema"}, validator: '(val) => true' },
+        'yes': { type: 'booleanFlagSchema', required: true, hasDefault: false, description: 'Approve destructive deletes without prompting', schema: {"type":"zod","name":"booleanFlagSchema"}, validator: '(val) => true' },
+        'wait': { type: 'booleanFlagSchema', required: true, hasDefault: false, description: 'Wait for the Railway commit workflow to finish', schema: {"type":"zod","name":"booleanFlagSchema"}, validator: '(val) => true' },
+        'var': { type: 'repeatableStringSchema', required: true, hasDefault: false, description: 'Prompt variable value as KEY=value for shared vars or SERVICE.KEY=value for service vars', schema: {"type":"zod","name":"repeatableStringSchema"}, validator: '(val) => true' }
+      },
       path: './src/commands/apply.command'
+    },
+  'approve': {
+      name: 'approve',
+      description: 'Approve a Railform approval request',
+      path: './src/commands/approve.command'
+    },
+  'init': {
+      name: 'init',
+      description: 'Create a basic Railform project',
+      path: './src/commands/init.command'
+    },
+  'plan': {
+      name: 'plan',
+      description: 'Preview Railway changes for the current configuration',
+      options: {
+        'web': { type: 'booleanFlagSchema', required: true, hasDefault: false, description: 'Open the staged Railway changes in the browser', schema: {"type":"zod","name":"booleanFlagSchema"}, validator: '(val) => true' }
+      },
+      path: './src/commands/plan.command'
+    },
+  'preview': {
+      name: 'preview',
+      description: 'Preview Railway changes for the current configuration',
+      options: {
+        'web': { type: 'booleanFlagSchema', required: true, hasDefault: false, description: 'Open the Railway project in the browser', schema: {"type":"zod","name":"booleanFlagSchema"}, validator: '(val) => true' }
+      },
+      path: './src/commands/preview.command'
+    },
+  'reject': {
+      name: 'reject',
+      description: 'Reject a Railform approval request',
+      path: './src/commands/reject.command'
+    },
+  'review': {
+      name: 'review',
+      description: 'Review a pending Railform approval request',
+      path: './src/commands/review.command'
     }
 } as const
 
